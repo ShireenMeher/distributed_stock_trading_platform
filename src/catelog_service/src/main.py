@@ -6,6 +6,7 @@ import os
 import threading
 import time
 import traceback
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -14,6 +15,7 @@ load_dotenv()
 CATALOG_FILE = os.environ['CATALOG_FILE']
 HOST = os.environ['CATALOG_HOST']
 PORT = int(os.environ['CATALOG_PORT'])
+FRONTEND_URL = os.environ['FRONTEND_URL']
 
 # Global in-memory catalog
 # catalog = {
@@ -71,7 +73,7 @@ def initialize_catalog_data():
                 "quantity": 100
             },
         }
-    print("[INIT] Default catalog initialized in memory")
+    print("[INIT] Default catalog initialized in memory", flush=True)
 
 
 # Load catalog from CSV once at startup
@@ -118,6 +120,17 @@ class CatalogHandler(BaseHTTPRequestHandler):
             else:
                 self._send_json_response(404, {"error": {"code": 404, "message":"stock not found"}})
                 return
+            
+    def invalidate_frontend_cache(self, stock_name):
+        try:
+            print("reaching inside invalidate - ", stock_name, flush=True)
+            print((f"{FRONTEND_URL}/invalidate/{stock_name}"), flush=True)
+            print("sending request to frontend - ", flush=True)
+            res = requests.post(f"{FRONTEND_URL}/invalidate/{stock_name}")
+            print(f"[FRONTEND] {res.status_code} - {res.text}", flush=True)
+        except Exception as e:
+            print("[ERROR] Frontend cache invalidation failed:", e)
+            traceback.print_exc()
 
     # GET /lookup/{stock_name}
     def do_GET(self):
@@ -150,6 +163,7 @@ class CatalogHandler(BaseHTTPRequestHandler):
                         self._send_json_response(400, {"error": {"code": 400, "message":"Insufficient stock"}})
                         return
                     catalog[stock_name]['quantity'] = new_qty
+                    threading.Thread(target=self.invalidate_frontend_cache, args=(stock_name,)).start()
                     self._send_json_response(200, {"success": True})
                     return
                 else:
@@ -158,6 +172,7 @@ class CatalogHandler(BaseHTTPRequestHandler):
         except Exception as e:
             print(e)
             print(traceback.format_exc())
+            traceback.print_exc()
             self._send_json_response(500, {"error": {"code": 500, "message":"internal server error"}})
             return
 
@@ -166,6 +181,7 @@ class CatalogHandler(BaseHTTPRequestHandler):
         print("reached catalog service -  ", self.path)
         if self.path.startswith("/update/"):
             parts = self.path.strip('/').split('/')
+            print("reaching inside update - ", self.path, flush=True)
             if len(parts) == 3:
                 _, stock_name, change_str = parts
                 self.update_stocks_process(stock_name, change_str)

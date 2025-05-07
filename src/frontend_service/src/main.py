@@ -5,17 +5,88 @@ import traceback
 import os
 from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
+import time
 
 load_dotenv()
+print("printing fe")
 
 SERVER_HOST = os.environ['SERVER_HOST']
 SERVER_PORT = int(os.environ['SERVER_PORT'])
 CATALOG_SERVICE_URL = os.environ['CATALOG_SERVICE_URL']
-ORDER_SERVICE_URL = os.environ['ORDER_SERVICE_URL']
+CACHE_SIZE = int(os.environ['CACHE_SIZE']) 
+
+REPLICAS = [
+    {"id": int(os.environ['REPLICA_1_ID']), "url": os.environ['REPLICA_1_URL']},
+    {"id": int(os.environ['REPLICA_2_ID']), "url": os.environ['REPLICA_2_URL']},
+    {"id": int(os.environ['REPLICA_3_ID']), "url": os.environ['REPLICA_3_URL']},
+]
+
 
 # using python's ThreadPoolExecutor to handle multiple clients concurrently
 MAX_WORKERS = 5
 executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
+
+class LRUCache:
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.cache = {}         
+        self.usage_order = [] 
+
+    def get(self, key):
+        if key in self.cache:
+            self.usage_order.remove(key)
+            self.usage_order.append(key)
+            return self.cache[key]
+        return None
+
+    def put(self, key, value):
+        if key in self.cache:
+            self.cache[key] = value
+            self.usage_order.remove(key)
+            self.usage_order.append(key)
+        else:
+            # New key
+            if len(self.cache) >= self.capacity:
+                oldest_key = self.usage_order.pop(0)
+                del self.cache[oldest_key]
+            self.cache[key] = value
+            self.usage_order.append(key)
+
+    def invalidate(self, key):
+        if key in self.cache:
+            self.usage_order.remove(key)
+            del self.cache[key]
+
+
+cache = LRUCache(CACHE_SIZE)
+
+leader = None
+
+def select_leader():
+    global leader
+    sorted_replicas = sorted(REPLICAS, key=lambda r: -r['id'])
+    print(f"[INFO] Sorted replicas: {sorted_replicas}", flush=True)
+    for replica in sorted_replicas:
+        try:
+            res = requests.get(f"{replica['url']}/health", timeout=1)
+            if res.status_code == 200:
+                leader = replica
+                notify_all_replicas(replica['id'])
+                print(f"[LEADER] Selected replica {replica['id']}", flush=True)
+                return
+        except:
+            continue
+    leader = None
+
+def notify_all_replicas(leader_id):
+    print("raching notify all replicas", flush=True)
+    for r in REPLICAS:
+        try:
+            requests.post(f"{r['url']}/set_leader", json={"leader_id": leader_id})
+        except:
+            print(f"[WARN] Failed to notify replica {r['id']}")
+
+select_leader()
 
 class FrontendHandler(BaseHTTPRequestHandler):
 
@@ -51,7 +122,8 @@ class FrontendHandler(BaseHTTPRequestHandler):
         self._handle_not_allowed()
 
     def do_GET(self):
-        if self.path.startswith('/stocks/'):
+        global leader
+        if self.path.startswith('/stocks/without/cache/'):
             stock_name = self.path.split('/')[-1]
             try:
                 cat_res = requests.get(f"{CATALOG_SERVICE_URL}/stocks/{stock_name}")
@@ -61,13 +133,92 @@ class FrontendHandler(BaseHTTPRequestHandler):
                 print("[ERROR] Catalog request failed:", e)
                 traceback.print_exc()
                 self._send_json_response(500, {"error": {"code": 500, "message":"Internal server error"}})
+                return
+            
+        elif self.path.startswith('/stocks/'):
+            stock_name = self.path.split('/')[-1]
+            # start_time = time.time()
+            try:
+                cached_stcok = cache.get(stock_name)
+                if cached_stcok:
+                    print(f"[CACHE HIT] {cached_stcok}")
+                    # end_time_cache_hit = time.time()
+                    # cache_hit_latency = end_time_cache_hit - start_time
+                    # print(f"[CACHE HIT] Latency: {cache_hit_latency:.2f} ms")
+                    # with open(f"logs/lookup_latency_cache_hit.log", "a") as f:
+                    #     f.write(f"{cache_hit_latency}\n")
+                    self._send_json_response(200, cached_stcok)
+                    return
+                else:
+                    try:
+                        cat_res = requests.get(f"{CATALOG_SERVICE_URL}/stocks/{stock_name}")
+                        print(f"[CATALOG] {cat_res.status_code} - {cat_res.text}")
+                        if cat_res.status_code == 200:
+                            cache.put(stock_name, cat_res.json())
+                            # end_time_cache_miss = time.time()
+                            # cache_miss_latency = end_time_cache_miss - start_time
+                            # print(f"[CACHE MISS] Latency: {cache_miss_latency:.2f} ms")
+                            # with open(f"logs/lookup_latency_cache_miss.log", "a") as f:
+                            #     f.write(f"{cache_miss_latency}\n")
+                        self._send_json_response(cat_res.status_code, cat_res.json())
+                    except Exception as e:
+                        print("[ERROR] Catalog request failed:", e)
+                        traceback.print_exc()
+                        self._send_json_response(500, {"error": {"code": 500, "message":"Internal server error"}})
+                        return
+            except Exception as e:
+                print("[ERROR] Frontend request failed:", e)
+                traceback.print_exc()
+                self._send_json_response(500, {"error": {"code": 500, "message":"Internal server error"}})
+                return
+            
+        elif self.path == '/orders':
+            # GET /orders
+            # returns a list of orders
+            # or {'error': {'code': xx, 'message': 'error message'}}
+
+            try:
+                if not leader:
+                    select_leader()
+                
+                if not leader:
+                    self._send_json_response(503, {"error": {"code": 503, "message": "No leader available"}})
+                    return
+
+                print(f"[LEADER] {leader['id']}", flush=True)
+                order_res = requests.get(f"{leader['url']}/orders", timeout=2)
+                print(f"[ORDER] {order_res.status_code} - {order_res.text}", flush=True)
+                self._send_json_response(order_res.status_code, order_res.json())
+            except:
+                print("[ERROR] Leader down, retrying...")
+                select_leader()
+                self._send_json_response(503, {"error": {"code": 503, "message": "Leader unavailable, please retry"}})
+                return
+
+            print(f"[ORDER] {order_res.status_code} - {order_res.text}")
+            self._send_json_response(order_res.status_code, order_res.json())
 
         # returns {'data': {'number': 1, 'name': 'AAPL', 'type': 'buy', 'quantity': 10}}
         # or {'error': {'code': xx, 'message': 'error message'}}
         elif self.path.startswith('/orders/'):
             order_number = self.path.split('/')[-1]
             try:
-                order_res = requests.get(f"{ORDER_SERVICE_URL}/orders/{order_number}")
+                
+                if not leader:
+                    select_leader()
+                if not leader:
+                    self._send_json_response(503, {"error": {"code": 503, "message": "No leader available"}})
+                    return
+
+                try:
+                    order_res = requests.get(f"{leader['url']}/orders/{order_number}", timeout=2)
+                    self._send_json_response(order_res.status_code, order_res.json())
+                except:
+                    print("[ERROR] Leader down, retrying...")
+                    select_leader()
+                    self._send_json_response(503, {"error": {"code": 503, "message": "Leader unavailable, please retry"}})
+                    return
+
                 print(f"[ORDER] {order_res.status_code} - {order_res.text}")
                 self._send_json_response(order_res.status_code, order_res.json())
             except Exception as e:
@@ -78,6 +229,7 @@ class FrontendHandler(BaseHTTPRequestHandler):
             self._send_json_response(404, {"error":  {"code": 404, "message":"URL not found"}})
 
     def do_POST(self):
+        global leader
         if self.path == '/orders':
             try:
                 content_length = int(self.headers.get('Content-Length', 0))
@@ -88,12 +240,39 @@ class FrontendHandler(BaseHTTPRequestHandler):
                 return
 
             try:
-                order_res = requests.post(f"{ORDER_SERVICE_URL}/orders", json=data)
+                
+                if not leader:
+                    select_leader()
+                if not leader:
+                    self._send_json_response(503, {"error": {"code": 503, "message": "No leader available"}})
+                    return
+
+                # propagate follower URLs in request
+                followers = [r['url'] for r in REPLICAS if r['id'] != leader['id']]
+                payload = data.copy()
+                payload["followers"] = followers
+
+                try:
+                    print("reached here you predicted correct")
+                    order_res = requests.post(f"{leader['url']}/orders", json=payload, timeout=2)
+                    self._send_json_response(order_res.status_code, order_res.json())
+                except:
+                    print("[ERROR] Leader down during trade, retrying...")
+                    traceback.print_exc()
+                    select_leader()
+                    self._send_json_response(503, {"error": {"code": 503, "message": "Leader unavailable, please retry"}})
+
+
                 self._send_json_response(order_res.status_code, order_res.json())
             except Exception as e:
                 print("[ERROR] Order request failed:", e)
                 traceback.print_exc()
                 self._send_json_response(500, {"error": {"code": 500, "message":"Internal server error"}})
+        elif self.path.startswith('/invalidate'):
+            stock_name = self.path.split('/')[-1]
+            print(f"[INVALIDATE] Request received for {stock_name}", flush=True)
+            cache.invalidate(stock_name)
+            self._send_json_response(200, {"success": True})
         else:
             self._send_json_response(404, {"error": {"code": 404, "message":"URL not found"}})
 
