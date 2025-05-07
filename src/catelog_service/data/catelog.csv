@@ -1,5 +1,11 @@
 name,price,quantity
-GameStart,15.99,31
-RottenFishCo,5.49,157
-BoarCo,9.99,112
-MenhirCo,12.75,78
+GameStart,15.99,99
+RottenFishCo,5.49,201
+BoarCo,9.99,43
+MenhirCo,12.75,47
+SwordCo,25.0,85
+ShieldCo,30.0,20
+BowCo,35.0,141
+ArrowCo,2.5,201
+PotionCo,10.0,54
+HelmetCo,15.0,15
