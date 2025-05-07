@@ -27,7 +27,31 @@ test_catalog = {
             "MenhirCo": {
                 "price": 12.75,
                 "quantity": 100
-            }
+            },
+            "SwordCo": {
+                "price": 25.00,
+                "quantity": 100
+            },
+            "ShieldCo": {
+                "price": 30.00,
+                "quantity": 100
+            },
+            "BowCo": {
+                "price": 35.00,
+                "quantity": 100
+            },
+            "ArrowCo": {
+                "price": 2.50,
+                "quantity": 100
+            },
+            "PotionCo": {
+                "price": 10.00,
+                "quantity": 100
+            },
+            "HelmetCo": {
+                "price": 15.00,
+                "quantity": 100
+            },
         }
 
 TEST_CATALOG_FILE = os.environ['TEST_CATALOG_FILE']
