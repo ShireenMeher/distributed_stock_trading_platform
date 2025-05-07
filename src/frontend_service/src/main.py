@@ -5,6 +5,7 @@ import traceback
 import os
 from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
+import threading
 import time
 
 load_dotenv()
@@ -24,41 +25,61 @@ REPLICAS = [
 
 # using python's ThreadPoolExecutor to handle multiple clients concurrently
 MAX_WORKERS = 5
+LOG_FILE = "/app/data/CACHE_ACTIVITY.log"
 executor = ThreadPoolExecutor(max_workers=MAX_WORKERS)
 
 class LRUCache:
-    def __init__(self, capacity):
+    def __init__(self, capacity, log_file):
         self.capacity = capacity
         self.cache = {}         
         self.usage_order = [] 
+        self.lock = threading.Lock()
+        self.log_file = log_file
 
+    def _log(self, message):
+        #get timestamp and log it to a file
+        timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
+        with open(self.log_file, "a") as f:
+            f.write(f"[{timestamp}] {message}\n")
+        
     def get(self, key):
-        if key in self.cache:
-            self.usage_order.remove(key)
-            self.usage_order.append(key)
-            return self.cache[key]
+        with self.lock:
+            if key in self.cache:
+                self.usage_order.remove(key)
+                self.usage_order.append(key)
+                self._log(f"CACHE HIT: {key}")
+                return self.cache[key]
+            else:
+                self._log(f"CACHE MISS: {key}")
         return None
 
     def put(self, key, value):
-        if key in self.cache:
-            self.cache[key] = value
-            self.usage_order.remove(key)
-            self.usage_order.append(key)
-        else:
-            # New key
-            if len(self.cache) >= self.capacity:
-                oldest_key = self.usage_order.pop(0)
-                del self.cache[oldest_key]
-            self.cache[key] = value
-            self.usage_order.append(key)
+        with self.lock:
+            if key in self.cache:
+                self._log(f"CACHE UPDATE: {key}")
+                self.cache[key] = value
+                self.usage_order.remove(key)
+                self.usage_order.append(key)
+            else:
+                # New key
+                if len(self.cache) >= self.capacity:
+                    self._log(f"CACHE EVICT: {key}")
+                    oldest_key = self.usage_order.pop(0)
+                    del self.cache[oldest_key]
+
+                self._log(f"CACHE INSERT: {key}")
+                self.cache[key] = value
+                self.usage_order.append(key)
 
     def invalidate(self, key):
-        if key in self.cache:
-            self.usage_order.remove(key)
-            del self.cache[key]
+        with self.lock:
+            if key in self.cache:
+                self._log(f"CACHE EVICT: {key}")
+                self.usage_order.remove(key)
+                del self.cache[key]
 
 
-cache = LRUCache(CACHE_SIZE)
+cache = LRUCache(CACHE_SIZE, LOG_FILE)
 
 leader = None
 
@@ -142,11 +163,6 @@ class FrontendHandler(BaseHTTPRequestHandler):
                 cached_stcok = cache.get(stock_name)
                 if cached_stcok:
                     print(f"[CACHE HIT] {cached_stcok}")
-                    # end_time_cache_hit = time.time()
-                    # cache_hit_latency = end_time_cache_hit - start_time
-                    # print(f"[CACHE HIT] Latency: {cache_hit_latency:.2f} ms")
-                    # with open(f"logs/lookup_latency_cache_hit.log", "a") as f:
-                    #     f.write(f"{cache_hit_latency}\n")
                     self._send_json_response(200, cached_stcok)
                     return
                 else:
@@ -155,11 +171,6 @@ class FrontendHandler(BaseHTTPRequestHandler):
                         print(f"[CATALOG] {cat_res.status_code} - {cat_res.text}")
                         if cat_res.status_code == 200:
                             cache.put(stock_name, cat_res.json())
-                            # end_time_cache_miss = time.time()
-                            # cache_miss_latency = end_time_cache_miss - start_time
-                            # print(f"[CACHE MISS] Latency: {cache_miss_latency:.2f} ms")
-                            # with open(f"logs/lookup_latency_cache_miss.log", "a") as f:
-                            #     f.write(f"{cache_miss_latency}\n")
                         self._send_json_response(cat_res.status_code, cat_res.json())
                     except Exception as e:
                         print("[ERROR] Catalog request failed:", e)
