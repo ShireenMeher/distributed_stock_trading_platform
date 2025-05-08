@@ -83,6 +83,20 @@ cache = LRUCache(CACHE_SIZE, LOG_FILE)
 
 leader = None
 
+# Monitor the leader status in a separate thread
+def monitor_leader():
+    while True:
+        time.sleep(5)
+        if leader:
+            try:
+                res = requests.get(f"{leader['url']}/health", timeout=1)
+                if res.status_code != 200:
+                    raise Exception("Unhealthy")
+            except:
+                print("[MONITOR] Leader seems to be down. Re-electing...")
+                select_leader()
+
+
 def select_leader():
     global leader
     sorted_replicas = sorted(REPLICAS, key=lambda r: -r['id'])
@@ -303,3 +317,5 @@ def start_server():
 
 if __name__ == '__main__':
     start_server()
+    #uncomment this line for paxos
+    # threading.Thread(target=monitor_leader, daemon=True).start()

@@ -1,0 +1,95 @@
+services:
+  frontend_service:
+    build:
+      context: ./src/frontend_service
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./src/frontend_service/.env
+    volumes:
+      - ./src/frontend_service/data:/app/data
+    depends_on:
+      - catelog_service
+      - order_service_1
+      - order_service_2
+      - order_service_3
+
+
+  catelog_service:
+    build:
+      context: ./src/catelog_service
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./src/catelog_service/data:/app/data
+    env_file:
+      - ./src/catelog_service/.env
+
+
+  order_service_1:
+    build:
+      context: ./src/order_service
+    ports:
+      - "6001:6001"
+    volumes:
+      - ./src/order_service/data1:/app/data
+    env_file:
+      - ./src/order_service/.env.1
+
+  order_service_2:
+    build:
+      context: ./src/order_service
+    ports:
+      - "6002:6002"
+    volumes:
+      - ./src/order_service/data2:/app/data
+    env_file:
+      - ./src/order_service/.env.2
+
+  order_service_3:
+    build:
+      context: ./src/order_service
+    ports:
+      - "6003:6003"
+    volumes:
+      - ./src/order_service/data3:/app/data
+    env_file:
+      - ./src/order_service/.env.3
+
+  # test_runner:
+  #   build:
+  #     context: ./src/tests
+  #   command: >
+  #     sh -c "sleep 5 && python3 -m unittest discover -s functional -p 'test_replication.py'"
+  #   depends_on:
+  #     - frontend_service
+  #     - order_service_1
+  #     - order_service_2
+  #     - order_service_3
+  #     - catelog_service
+  #   environment:
+  #     FRONTEND_URL: http://frontend_service:8000
+  #     # Add other env vars if needed
+  #   networks:
+  #     - default
+  #   volumes:
+  #     - ./src/tests:/app
+
+  # client:
+  #   build:
+  #     context: ./src/client
+  #   depends_on:
+  #     - frontend_service
+  #   volumes:
+  #     - ./logs:/app/logs
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   command: ["bash", "simulate_crash_with_leader.sh"]
+
+
+
+volumes:
+  order1_data:
+  order2_data:
+  order3_data:
+  CACHE_ACTIVITY:
+
