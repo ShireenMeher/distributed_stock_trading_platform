@@ -4,7 +4,7 @@ import requests
 class TestTradeOverbuy(unittest.TestCase):
 
     def test_overbuy_rejected(self):
-        url = "http://localhost:8000/trade"
+        url = "http://frontend_service:8000/orders"
         payload = {
             "name": "GameStart",
             "quantity": 999999,
@@ -18,7 +18,7 @@ class TestTradeOverbuy(unittest.TestCase):
         self.assertIn("insufficient", response.json()["error"]["message"].lower())
 
     def test_invalid_trade_type(self):
-        url = "http://localhost:8000/trade"
+        url = "http://frontend_service:8000/orders"
         payload = {
             "name": "GameStart",
             "quantity": 10,
@@ -32,7 +32,7 @@ class TestTradeOverbuy(unittest.TestCase):
         self.assertIn("invalid", response.json()["error"]["message"].lower())
 
     def test_invalid_quantity(self):
-        url = "http://localhost:8000/trade"
+        url = "http://frontend_service:8000/orders"
         payload = {
             "name": "GameStart",
             "quantity": -10,
@@ -44,7 +44,7 @@ class TestTradeOverbuy(unittest.TestCase):
         self.assertIn("invalid", response.json()["error"]["message"].lower())
 
     def test_invalid_name(self):
-        url = "http://localhost:8000/trade"
+        url = "http://frontend_service:8000/orders"
         payload = {
             "name": "INVALIDDD",
             "quantity": 10,
@@ -56,7 +56,7 @@ class TestTradeOverbuy(unittest.TestCase):
         self.assertIn("stock not found", response.json()["error"]["message"].lower())
 
     def test_invalid_json(self):
-        url = "http://localhost:8000/trade"
+        url = "http://frontend_service:8000/orders"
         payload = "invalid_json"
         response = requests.post(url, data=payload)
         self.assertEqual(response.status_code, 400)

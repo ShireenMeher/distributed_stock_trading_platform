@@ -39,8 +39,8 @@ class LRUCache:
     def _log(self, message):
         #get timestamp and log it to a file
         timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-        with open(self.log_file, "a") as f:
-            f.write(f"[{timestamp}] {message}\n")
+        # with open(self.log_file, "a") as f:
+        #     f.write(f"[{timestamp}] {message}\n")
         
     def get(self, key):
         with self.lock:

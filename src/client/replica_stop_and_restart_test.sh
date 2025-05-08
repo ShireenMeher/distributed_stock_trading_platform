@@ -7,7 +7,7 @@ echo " [STOP] Stopping order_service_2..."
 docker stop spring25-lab3-spring25-lab3-shireenmeher-order_service_2-1
 sleep 2
 
-echo "📦 Sending trade request {"name": "MenhirCo", "type": "sell", "quantity": 5} ..."
+echo "Sending trade request {"name": "MenhirCo", "type": "sell", "quantity": 5} ..."
 response=$(curl -s -X POST "$FRONTEND_URL/orders" \
   -H "Content-Type: application/json" \
   -d '{"name": "MenhirCo", "type": "sell", "quantity": 5}')

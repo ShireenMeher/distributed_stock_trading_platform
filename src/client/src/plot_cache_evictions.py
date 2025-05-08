@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import re
 
 CACHE_SIZE = 5  # Set your cache size here
-log_path = "src/frontend_service/data/CACHE_ACTIVITY.log"
+log_path = "/app/frontend_logs/CACHE_ACTIVITY.log"
 
 def parse_cache_log(log_path):
     with open(log_path) as f:

@@ -5,7 +5,7 @@ class TestLookupValid(unittest.TestCase):
 
     def test_lookup_existing_stock(self):
         stock = "GameStart"
-        url = f"http://localhost:8000/lookup/{stock}"
+        url = f"http://frontend_service:8000/stocks/{stock}"
         response = requests.get(url)
         print("--------")
         print(response)
@@ -15,7 +15,7 @@ class TestLookupValid(unittest.TestCase):
         self.assertGreaterEqual(response.json()["data"]["quantity"], 0)
 
     def test_lookup_nonexistent_stock(self):
-        url = "http://localhost:8000/lookup/UnknownStock"
+        url = "http://frontend_service:8000/stocks/UnknownStock"
         response = requests.get(url)
 
         self.assertEqual(response.status_code, 404)
@@ -23,14 +23,14 @@ class TestLookupValid(unittest.TestCase):
         self.assertIn("stock not found", response.json()["error"]["message"].lower())
 
     def test_lookup_invalid_url(self):
-        url = "http://localhost:8000/lookupp/"
+        url = "http://frontend_service:8000/lookpppp/"
         response = requests.get(url)
         self.assertEqual(response.status_code, 404)
         self.assertIn("error", response.json())
         self.assertIn("url not found", response.json()["error"]["message"].lower())
 
     def test_lookup_invalid_json(self):
-        url = "http://localhost:8000/lookup/invalid_json"
+        url = "http://frontend_service:8000/stocks/invalid_json"
         response = requests.get(url)
         self.assertEqual(response.status_code, 404)
         self.assertIn("error", response.json())
