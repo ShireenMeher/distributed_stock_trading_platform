@@ -1,0 +1,124 @@
+{
+    "ReservationId": "r-054551a39e1bc669f",
+    "OwnerId": "195310404446",
+    "Groups": [],
+    "Instances": [
+        {
+            "Architecture": "x86_64",
+            "BlockDeviceMappings": [],
+            "ClientToken": "8bb1a418-299c-4ac3-b234-00778dd21574",
+            "EbsOptimized": false,
+            "EnaSupport": true,
+            "Hypervisor": "xen",
+            "NetworkInterfaces": [
+                {
+                    "Attachment": {
+                        "AttachTime": "2025-05-08T00:39:09+00:00",
+                        "AttachmentId": "eni-attach-0838c487bd4f6c0a8",
+                        "DeleteOnTermination": true,
+                        "DeviceIndex": 0,
+                        "Status": "attaching",
+                        "NetworkCardIndex": 0
+                    },
+                    "Description": "",
+                    "Groups": [
+                        {
+                            "GroupId": "sg-0143db8f0e50a2b35",
+                            "GroupName": "default"
+                        }
+                    ],
+                    "Ipv6Addresses": [],
+                    "MacAddress": "0a:ff:c9:22:4b:ab",
+                    "NetworkInterfaceId": "eni-02d9e47328b4e9899",
+                    "OwnerId": "195310404446",
+                    "PrivateDnsName": "ip-172-31-22-227.ec2.internal",
+                    "PrivateIpAddress": "172.31.22.227",
+                    "PrivateIpAddresses": [
+                        {
+                            "Primary": true,
+                            "PrivateDnsName": "ip-172-31-22-227.ec2.internal",
+                            "PrivateIpAddress": "172.31.22.227"
+                        }
+                    ],
+                    "SourceDestCheck": true,
+                    "Status": "in-use",
+                    "SubnetId": "subnet-076dbc3dcba5bbe0f",
+                    "VpcId": "vpc-02be0efffc93e7889",
+                    "InterfaceType": "interface",
+                    "Operator": {
+                        "Managed": false
+                    }
+                }
+            ],
+            "RootDeviceName": "/dev/sda1",
+            "RootDeviceType": "ebs",
+            "SecurityGroups": [
+                {
+                    "GroupId": "sg-0143db8f0e50a2b35",
+                    "GroupName": "default"
+                }
+            ],
+            "SourceDestCheck": true,
+            "StateReason": {
+                "Code": "pending",
+                "Message": "pending"
+            },
+            "VirtualizationType": "hvm",
+            "CpuOptions": {
+                "CoreCount": 1,
+                "ThreadsPerCore": 1
+            },
+            "CapacityReservationSpecification": {
+                "CapacityReservationPreference": "open"
+            },
+            "MetadataOptions": {
+                "State": "pending",
+                "HttpTokens": "optional",
+                "HttpPutResponseHopLimit": 1,
+                "HttpEndpoint": "enabled",
+                "HttpProtocolIpv6": "disabled",
+                "InstanceMetadataTags": "disabled"
+            },
+            "EnclaveOptions": {
+                "Enabled": false
+            },
+            "PrivateDnsNameOptions": {
+                "HostnameType": "ip-name",
+                "EnableResourceNameDnsARecord": false,
+                "EnableResourceNameDnsAAAARecord": false
+            },
+            "MaintenanceOptions": {
+                "AutoRecovery": "default"
+            },
+            "CurrentInstanceBootMode": "legacy-bios",
+            "Operator": {
+                "Managed": false
+            },
+            "InstanceId": "i-09dd3b61fc57d16fc",
+            "ImageId": "ami-0d73480446600f555",
+            "State": {
+                "Code": 0,
+                "Name": "pending"
+            },
+            "PrivateDnsName": "ip-172-31-22-227.ec2.internal",
+            "PublicDnsName": "",
+            "StateTransitionReason": "",
+            "KeyName": "vockey",
+            "AmiLaunchIndex": 0,
+            "ProductCodes": [],
+            "InstanceType": "t2.micro",
+            "LaunchTime": "2025-05-08T00:39:09+00:00",
+            "Placement": {
+                "GroupName": "",
+                "Tenancy": "default",
+                "AvailabilityZone": "us-east-1a"
+            },
+            "Monitoring": {
+                "State": "disabled"
+            },
+            "SubnetId": "subnet-076dbc3dcba5bbe0f",
+            "VpcId": "vpc-02be0efffc93e7889",
+            "PrivateIpAddress": "172.31.22.227"
+        }
+    ]
+}
