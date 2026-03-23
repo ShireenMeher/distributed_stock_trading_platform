@@ -1,24 +1,24 @@
-# 🚀 Distributed Stock Trading System
+# Distributed Stock Trading System
 
 A fault-tolerant, distributed stock trading platform built using microservices, featuring **replication, leader election, and Paxos-based consensus** to ensure consistency under failures.
 
 ---
 
-## ✨ Highlights
+## Highlights
 
-- 🔁 Replicated Order Service with leader election
-- 🧠 **Paxos-based consensus for consistent order replication**
-- ⚡ Fault-tolerant system with automatic failover
-- 🔄 Replica sync & recovery after crashes
-- 📦 Microservices architecture (Frontend, Catalog, Order)
-- 🧵 Concurrent request handling (thread-per-session)
-- ⚡ LRU Cache layer with latency benchmarking
-- 🐳 Dockerized deployment
-- 📊 Load testing + failure simulations
+- Replicated Order Service with leader election
+- **Paxos-based consensus for consistent order replication**
+- Fault-tolerant system with automatic failover
+- Replica sync & recovery after crashes
+- Microservices architecture (Frontend, Catalog, Order)
+- Concurrent request handling (thread-per-session)
+- LRU Cache layer with latency benchmarking
+- Dockerized deployment
+- Load testing + failure simulations
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 - **Frontend Service**
   - Routes requests to leader replica
@@ -35,7 +35,7 @@ A fault-tolerant, distributed stock trading platform built using microservices, 
 
 ---
 
-## ⚙️ Core Concepts
+## Core Concepts
 
 - Leader election & failover  
 - Replication via propagation + sync  
@@ -47,7 +47,7 @@ A fault-tolerant, distributed stock trading platform built using microservices, 
 
 ---
 
-## 🧠 Paxos Implementation
+## Paxos Implementation
 
 - Each replica acts as:
   - **Proposer (leader)**
@@ -67,7 +67,7 @@ A fault-tolerant, distributed stock trading platform built using microservices, 
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Docker
